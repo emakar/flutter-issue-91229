@@ -25,19 +25,40 @@ class CameraIssue extends StatefulWidget {
   _CameraIssueState createState() => _CameraIssueState();
 }
 
-class _CameraIssueState extends State<CameraIssue> with ForegroundStateObserver {
+class _CameraIssueState extends State<CameraIssue> with WidgetsBindingObserver {
   CameraController? _controller;
 
   @override
-  void didForeground() {
-    _initCamera();
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // App state changed before we got the chance to initialize.
+    if (_controller == null || !_controller!.value.isInitialized) {
+      return;
+    }
+    if (state == AppLifecycleState.inactive) {
+      _controller?.dispose();
+    } else if (state == AppLifecycleState.resumed) {
+      if (_controller != null) {
+        _initCamera();
+      }
+    }
   }
 
   @override
-  void didBackground() {
-    _controller?.dispose();
-    _controller = null;
+  void initState() {
+    super.initState();
+    _initCamera();
   }
+
+  // @override
+  // void didForeground() {
+  //   _initCamera();
+  // }
+
+  // @override
+  // void didBackground() {
+  //   _controller?.dispose();
+  //   _controller = null;
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +70,8 @@ class _CameraIssueState extends State<CameraIssue> with ForegroundStateObserver 
 
   Future<void> _initCamera() async {
     final camera = await availableCameras().then((cameras) {
-      return cameras.firstWhereOrNull((e) => e.lensDirection != CameraLensDirection.front);
+      return cameras.firstWhereOrNull(
+          (e) => e.lensDirection != CameraLensDirection.front);
     }).onError((error, stackTrace) {
       debugPrint("camera: availableCameras error: ${error?.toString()}");
       return null;
