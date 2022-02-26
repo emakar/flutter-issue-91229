@@ -2,6 +2,7 @@
     package="flutter.playground.flutter_playground">
    <application
         android:label="flutter_playground"
+        android:name=".App"
         android:icon="@mipmap/ic_launcher">
         <activity
             android:name=".MainActivity"

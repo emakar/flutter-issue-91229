@@ -1,10 +1,5 @@
-import 'dart:math';
-
-import 'package:camera/camera.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-
-import 'ForegroundStateObserver.dart';
+import 'package:flutter_playground/MapChannel.dart';
 
 void main() => runApp(MyApp());
 
@@ -12,64 +7,52 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Camera',
-      home: CameraIssue(),
+      title: 'Map',
+      home: MapWidget(),
     );
   }
 }
 
-class CameraIssue extends StatefulWidget {
-  const CameraIssue({Key? key}) : super(key: key);
+class MapWidget extends StatefulWidget {
+  const MapWidget({Key? key}) : super(key: key);
 
   @override
-  _CameraIssueState createState() => _CameraIssueState();
+  _MapWidgetState createState() => _MapWidgetState();
 }
 
-class _CameraIssueState extends State<CameraIssue> with ForegroundStateObserver {
-  CameraController? _controller;
+class _MapWidgetState extends State<MapWidget> {
+  MapChannel? _channel;
 
   @override
-  void didForeground() {
-    _initCamera();
+  void initState() {
+    super.initState();
+    _channel = TextureMapChannel();
   }
 
   @override
-  void didBackground() {
-    _controller?.dispose();
-    _controller = null;
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _channel?.initialize(mapSize: MediaQuery.of(context).size);
+  }
+
+  @override
+  void dispose() {
+    _channel?.dispose();
+    _channel = null;
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = _controller;
-    return controller != null && controller.value.isInitialized
-        ? CameraPreview(controller)
-        : SizedBox.expand();
-  }
-
-  Future<void> _initCamera() async {
-    final camera = await availableCameras().then((cameras) {
-      return cameras.firstWhereOrNull((e) => e.lensDirection != CameraLensDirection.front);
-    }).onError((error, stackTrace) {
-      debugPrint("camera: availableCameras error: ${error?.toString()}");
-      return null;
-    });
-    if (!mounted || camera == null) {
-      return;
-    }
-    _controller = CameraController(
-      camera,
-      ResolutionPreset.high,
-      enableAudio: false,
-      imageFormatGroup: ImageFormatGroup.jpeg,
-    );
-    _controller?.initialize().then((_) {
-      if (_controller == null) {
-        return;
-      }
-      setState(() {});
-    }).onError((error, stackTrace) {
-      debugPrint("camera: initialize error: ${error?.toString()}");
-    });
+    final channel = _channel!;
+    return FutureBuilder(
+        future: channel.mapId,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return Texture(textureId: snapshot.data as int);
+          } else {
+            return const SizedBox.expand();
+          }
+        });
   }
 }

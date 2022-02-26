@@ -65,4 +65,5 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "com.yandex.maps:maps.mobile:2022021116.9135078-drive"
 }
